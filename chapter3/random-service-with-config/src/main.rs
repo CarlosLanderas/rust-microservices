@@ -41,7 +41,7 @@ fn main() {
     info!("Rand Microservice - v0.1.0");
     trace!("Starting...");
 
-    let config = File::open("microservice.tom")
+    let config = File::open("microservice.toml")
         .and_then(|mut file| {
             let mut buffer = String::new();
             file.read_to_string(&mut buffer)?;
@@ -57,9 +57,10 @@ fn main() {
     let addr = matches.value_of("address")
         .map(|s| s.to_owned())
         .or(env::var("ADDRESS").ok())
-        .unwrap_or_else(|| "127.0.0.1:8080".into())
-        .parse()
-        .expect("Can't parse ADDRESS variable");
+        .and_then(|addr| addr.parse().ok())
+        .or(config.map(|config| config.address))
+        .or_else(|| Some(([127,0,0,1], 8080).into()))
+        .unwrap();
 
     debug!("Trying to bind server to address: {}", addr);
 
