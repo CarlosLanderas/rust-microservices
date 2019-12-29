@@ -80,16 +80,14 @@ fn handle_request(request: RngRequest) -> RngResponse {
     let value = {
         match request {
             RngRequest::Uniform { range} => {
-                let value = rng.sample(Uniform::from(range)) as f64
-                RngResponse::Value(value)
+                rng.sample(Uniform::from(range)) as f64
             },
             RngRequest::Normal {mean, std_dev} => {
-                let value = rng.sample(Normal::new(mean, std_dev)) as f64
-                RngResponse::Value(value)
+                rng.sample(Normal::new(mean, std_dev)) as f64
+
             },
             RngRequest::Bernoulli {p} => {
-                let value = rng.sample(Bernoulli::new(p)) as i8 as f64
-                RngResponse::Value(value)
+                rng.sample(Bernoulli::new(p)) as i8 as f64
             }
         }
     };
