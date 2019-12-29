@@ -64,7 +64,7 @@ fn microservice_handler(req: Request<Body>, user_db: &UserDb)
                 let list = users.iter()
                     .map(|(id,_)| id.to_string())
                     .collect::<Vec<String>>()
-                    .join("");
+                    .join("-");
                 Response::new(list.into())
             } else {
                 response_with_code(StatusCode::METHOD_NOT_ALLOWED)
