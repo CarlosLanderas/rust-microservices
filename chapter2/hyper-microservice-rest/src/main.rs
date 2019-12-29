@@ -5,7 +5,7 @@ use hyper::{Server, StatusCode, Error, Response, Body, Request, Method};
 use hyper::service::service_fn;
 use futures::{Future, future};
 use std::fmt::Formatter;
-use hyper::error::Parse::Status;
+
 
 type UserId = u64;
 struct UserData;
@@ -56,7 +56,7 @@ fn microservice_handler(req: Request<Body>, user_db: &UserDb)
                     if let Some(data) = users.get(id) {
                         Response::new(data.to_string().into())
                     } else {
-                        response_with_code((StatusCode::NOT_FOUND))
+                        response_with_code(StatusCode::NOT_FOUND)
                     }
                 },
                 (&Method::POST, None) => {
