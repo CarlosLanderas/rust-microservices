@@ -16,7 +16,8 @@ use crate::RngRequest::{Uniform, Normal, Bernoulli};
 
 #[derive(Deserialize, Serialize)]
 struct RngResponse {
-    value: f64,}
+    value: f64,
+}
 
 #[derive(Deserialize)]
 #[serde(tag = "distribution", content = "parameters", rename_all = "lowercase")]
@@ -79,13 +80,16 @@ fn handle_request(request: RngRequest) -> RngResponse {
     let value = {
         match request {
             RngRequest::Uniform { range} => {
-                rng.sample(Uniform::from(range)) as f64
+                let value = rng.sample(Uniform::from(range)) as f64
+                RngResponse::Value(value)
             },
             RngRequest::Normal {mean, std_dev} => {
-                rng.sample(Normal::new(mean, std_dev)) as f64
+                let value = rng.sample(Normal::new(mean, std_dev)) as f64
+                RngResponse::Value(value)
             },
             RngRequest::Bernoulli {p} => {
-                rng.sample(Bernoulli::new(p)) as i8 as f64
+                let value = rng.sample(Bernoulli::new(p)) as i8 as f64
+                RngResponse::Value(value)
             }
         }
     };
