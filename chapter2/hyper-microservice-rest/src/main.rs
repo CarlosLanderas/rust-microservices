@@ -4,6 +4,7 @@ use std::sync::{Arc, Mutex};
 use hyper::{Server, StatusCode, Error, Response, Body, Request, Method};
 use hyper::service::service_fn;
 use futures::{Future, future};
+use std::fmt::Formatter;
 
 type UserId = u64;
 struct UserData;
@@ -50,14 +51,29 @@ fn microservice_handler(req: Request<Body>, user_db: &UserDb)
                 .map(|x| x as usize);
             let mut users = user_db.lock().unwrap();
             match(method, user_id) {
+                (&Method::GET, Some(id)) => {
+                    if let Some(data) = users.get(id) {
+                        Response::new(data.to_string().into())
+                    } else {
+                        response_with_code((StatusCode::NOT_FOUND))
+                    }
+                },
                 (&Method::POST, None) => {
                   let id = users.insert(UserData);
-                  Response::new(id.to_string().into());
+                  Response::new(id.to_string().into())
 
                 },
                 (&Method::POST, Some(_))  => {
                     response_with_code(StatusCode::BAD_REQUEST)
-                }
+                },
+                (&Method::PUT, Some(id)) => {
+                  if let Some(user) = users.get_mut(id) {
+                      *user = UserData;
+                      response_with_code(StatusCode::OK)
+                  }  else {
+                      response_with_code(StatusCode::NOT_FOUND)
+                  }
+                },
                 _ => response_with_code(StatusCode::METHOD_NOT_ALLOWED)
             }
 
@@ -75,4 +91,10 @@ fn response_with_code(status_code: StatusCode) -> Response<Body> {
         .status(status_code)
         .body(Body::empty())
         .unwrap()
+}
+
+impl fmt::Display for UserData {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        f.write_str("{}")
+    }
 }
