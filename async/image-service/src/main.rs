@@ -19,10 +19,13 @@ lazy_static! {
 fn main() {
     let files = Path::new("./files");
 
-    match fs::create_dir(files) {
-        Err(e) => panic!("Could not create directory files"),
-        Result=> ()
-    };
+    if !Path::exists(files) {
+        match fs::create_dir(files) {
+            Err(e) => panic!("Could not create directory files"),
+            Result=> ()
+        };
+    }
+
 
     let addr = ([127,0,0,1], 8080).into();
     let builder = Server::bind(&addr);
