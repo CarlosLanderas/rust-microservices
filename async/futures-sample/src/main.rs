@@ -1,5 +1,5 @@
 use futures::sync::{oneshot, mpsc};
-use futures::{future, Future, IntoFuture};
+use futures::{future, Future, IntoFuture, Stream, Sink};
 
 
 fn to_box<T>(fut: T) -> Box<dyn Future<Item=(), Error=()> + Send>
@@ -14,6 +14,8 @@ fn to_box<T>(fut: T) -> Box<dyn Future<Item=(), Error=()> + Send>
 }
 
 fn single() {
+    println!("Executing simple");
+
     let (tx_sender, rx_future) = oneshot::channel::<u8>();
     let receiver = rx_future.map(|x| {
         println!("Received: {}", x);
@@ -28,8 +30,34 @@ fn single() {
     tokio::run(execute_all);
 }
 
+fn multiple() {
+    println!("Executing multiple");
+
+    let (tx_sink, rx_stream) = mpsc::channel::<u8>(8);
+    let receiver = rx_stream.fold(0, |acc, value| {
+        future::ok(acc + value)
+    }).map(|x| {
+        println!("Calculated: {}", x)
+    });
+
+    let send_1 = tx_sink.clone().send(1);
+    let send_2 = tx_sink.clone().send(2);
+    let send_3 = tx_sink.clone().send(3);
+
+    let execute_all = future::join_all(vec![
+        to_box(receiver),
+        to_box(send_1),
+        to_box(send_2),
+        to_box(send_3)
+    ]).map(drop);
+
+    drop(tx_sink);
+    tokio::run(execute_all);
+
+}
+
 
 fn main() {
     single();
-
+    multiple();
 }
