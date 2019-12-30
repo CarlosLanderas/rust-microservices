@@ -17,12 +17,12 @@ protobuf = "2.2"
 [build-dependencies]
 protoc-rust-grpc = { git = "https://github.com/stepancheg/grpc-rust", rev="07bb7a50f9c6a816fff65629f02be432d619ff4f"  }
 
-[[bin]]
-name = "grpc-ring"
-path = "src/server.rs"
-test = false
-
-[[bin]]
-name = "grpc-ring-client"
-path = "src/client.rs"
-test = false
+#[[bin]]
+#name = "grpc-ring"
+#path = "src/server.rs"
+#test = false
+#
+#[[bin]]
+#name = "grpc-ring-client"
+#path = "src/client.rs"
+#test = false
