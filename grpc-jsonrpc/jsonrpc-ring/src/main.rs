@@ -85,7 +85,39 @@ fn spawn_worker() -> Result<Sender<Action>, Error> {
     });
     Ok(tx)
 }
+fn to_internal<E: fmt::Display>(err: E) -> ServerError {
+    error!("Error: {}", err);
+    ServerError::internal_error()
+}
 
-fn main() {
+fn main() -> Result<(), Error> {
+    env_logger::init();
+    let tx = spawn_worker()?;
+    let addr: SocketAddr = env::var("ADDRESS")?.parse()?;
+    let mut io = IoHandler::default();
+    let sender = Mutex::new(tx.clone());
+    io.add_method(START_ROLL_CALL, move |_| {
+        trace!("START_ROLL_CALL");
+        let tx = sender
+            .lock()
+            .map_err(to_internal)?;
+        tx.send(Action::StartRollCall)
+            .map_err(to_internal)
+            .map(|_| Value::Bool(true))
+    });
+    let sender = Mutex::new(tx.clone());
+    io.add_method(MARK_ITSELF, move |_| {
+        trace!("MARK_ITSELF");
+        let tx = sender
+            .lock()
+            .map_err(to_internal)?;
+        tx.send(Action::MarkItself)
+            .map_err(to_internal)
+            .map(|_| Value::Bool(true))
+    });
 
+
+    let server = ServerBuilder::new(io).start_http(&addr)?;
+
+    Ok(server.wait())
 }
