@@ -50,7 +50,10 @@ fn send<'mw>(req: &mut Request<Data>, res: Response<'mw, Data>) -> MiddlewareRes
 
 fn send_impl(req: &mut Request<Data>) -> Result<(), Error> {
     let (to, code) = {
-        let params = req.form_body().map_err(|_| format_err!(""))?;
+        let params = req.form_body().map_err(|(_, err)| {
+            println!("Params error: {}", err);
+            format_err!("")
+        })?;
         let to = params
             .get("to")
             .ok_or(format_err!("to field not set"))?
