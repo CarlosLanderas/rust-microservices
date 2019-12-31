@@ -1,0 +1,11 @@
+version: "3.7"
+services:
+  postgres:
+    image: juanluisbaptiste/postfix
+    ports:
+      - "2525:25"
+    environment:
+      SMTP_SERVER: smtp.example.com
+      SMTP_USERNAME: admin@example.com
+      SMTP_PASSWORD: password
+      SERVER_HOSTNAME: smtp.example.com
