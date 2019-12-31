@@ -3,12 +3,13 @@ extern crate diesel;
 
 pub mod models;
 pub mod schema;
-
-use diesel::{insert_into, Connection, ExpressionMethods, PgConnection, RunQueryDsl};
+use diesel::{Connection, ExpressionMethods, OptionalExtension, PgConnection, QueryDsl, RunQueryDsl, insert_into};
 use failure::{format_err, Error};
 use models::{Channel, Id, Membership, Message, User};
 use schema::{channels, memberships, messages, users};
 use std::env;
+use chrono::Utc;
+
 
 pub struct Api {
     conn: PgConnection,
@@ -24,9 +25,117 @@ impl Api {
 
     pub fn register_user(&self, email: &str) -> Result<User, Error> {
         insert_into(users::table)
-            .values((users::email.eq("email")))
+            .values(users::email.eq(email))
             .returning((users::id, users::email))
             .get_result(&self.conn)
             .map_err(Error::from)
+    }
+
+    pub fn create_channel(&self, user_id: Id, title: &str, is_public: bool)
+                          -> Result<Channel, Error>
+    {
+        self.conn.transaction::<_, _, _>(|| {
+            let channel: Channel = insert_into(channels::table)
+                .values((
+                    channels::user_id.eq(user_id),
+                    channels::title.eq(title),
+                    channels::is_public.eq(is_public),
+                ))
+                .returning((
+                    channels::id,
+                    channels::user_id,
+                    channels::title,
+                    channels::is_public,
+                    channels::created_at,
+                    channels::updated_at,
+                ))
+                .get_result(&self.conn)
+                .map_err(Error::from)?;
+            self.add_member(channel.id, user_id)?;
+            Ok(channel)
+        })
+    }
+
+    pub fn publish_channel(&self, channel_id: Id) -> Result<(), Error> {
+
+        let channel = channels::table
+            .filter(channels::id.eq(channel_id))
+            .select((
+                    channels::id,
+                    channels::user_id,
+                    channels::title,
+                    channels::is_public,
+                    channels::created_at,
+                    channels::updated_at,
+                ))
+            .first::<Channel>(&self.conn)
+            .optional()
+            .map_err(Error::from)?;
+
+        if let Some(channel) = channel {
+            diesel::update(&channel)
+                .set(channels::is_public.eq(true))
+                .execute(&self.conn)?;
+            Ok(())
+        } else {
+            Err(format_err!("channel not found"))
+        }
+    }
+
+    pub fn add_member(&self, channel_id: Id, user_id: Id) -> Result<Membership, Error>
+    {
+        insert_into(memberships::table)
+            .values((
+                    memberships::channel_id.eq(channel_id),
+                    memberships::user_id.eq(user_id),
+                ))
+            .returning((
+                    memberships::id,
+                    memberships::channel_id,
+                    memberships::user_id
+                ))
+            .get_result(&self.conn)
+            .map_err(Error::from)
+
+    }
+
+    pub fn add_message(&self, channel_id: Id, user_id: Id, text: &str) -> Result<Message, Error>
+    {
+        let timestamp = Utc::now().naive_utc();
+        insert_into(messages::table)
+            .values((
+                    messages::timestamp.eq(timestamp),
+                    messages::channel_id.eq(channel_id),
+                    messages::user_id.eq(user_id),
+                    messages::text.eq(text)
+                ))
+            .returning((
+                    messages::id,
+                    messages::timestamp,
+                    messages::channel_id,
+                    messages::user_id,
+                    messages::text
+                ))
+            .get_result(&self.conn)
+            .map_err(Error::from)
+    }
+
+    pub fn delete_message(&self, message_id: Id) -> Result<(), Error> {
+        diesel::delete(messages::table)
+            .filter(messages::id.eq(message_id))
+            .execute(&self.conn)?;
+
+        Ok(())
+    }
+}
+
+
+#[cfg(test)]
+mod tests {
+    use super::Api;
+
+    #[test]
+    fn create_users() {
+
     }
 }
