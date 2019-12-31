@@ -18,7 +18,7 @@ pub struct Api {
 impl Api {
     pub fn connect() -> Result<Self, Error> {
         let database_url =
-            env::var("DATABASE_URL").unwrap_or("postgres://postgres@localhost:5432".to_string());
+            env::var("DATABASE_URL").unwrap_or("postgres://admin:example@localhost:5432".to_string());
         let conn = PgConnection::establish(&database_url)?;
         Ok(Self { conn })
     }
@@ -147,5 +147,6 @@ mod tests {
         let message = api.add_message(channel.id, user_1.id, "First message!").unwrap();
         api.delete_message(message.id).unwrap();
 
+        api.add_message(channel.id, user_1.id, "Another message").unwrap();
     }
 }
