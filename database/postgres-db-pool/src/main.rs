@@ -1,11 +1,11 @@
 use clap::{
     crate_authors, crate_description, crate_name, crate_version, App, AppSettings, Arg, SubCommand,
 };
+use csv::{ReaderBuilder, StringRecord};
 use postgres::{Connection, Error};
+use r2d2_postgres::PostgresConnectionManager;
 use rayon::prelude::*;
 use serde_derive::Deserialize;
-use r2d2_postgres::PostgresConnectionManager;
-use csv::{ReaderBuilder, StringRecord};
 
 #[derive(Deserialize, Debug)]
 struct User {
@@ -83,7 +83,6 @@ fn main() -> Result<(), failure::Error> {
             }
         }
         (CMD_IMPORT, _) => {
-
             let mut reader = ReaderBuilder::new()
                 .has_headers(true)
                 .from_path("users.csv")?;
@@ -91,9 +90,8 @@ fn main() -> Result<(), failure::Error> {
             let header = StringRecord::from(vec!["name", "email"]);
             let mut users = Vec::new();
 
-
-            for row in reader.records(){
-                let user : User = row?.deserialize(Some(&header))?;
+            for row in reader.records() {
+                let user: User = row?.deserialize(Some(&header))?;
                 users.push(User::new(user.name, user.email));
             }
 
