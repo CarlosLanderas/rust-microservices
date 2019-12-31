@@ -1,10 +1,11 @@
 use clap::{
     crate_authors, crate_description, crate_name, crate_version, App, AppSettings, Arg, SubCommand,
 };
-use postgres::{Connection, Error, TlsMode};
-use rayon::iter::IntoParallelRefIterator;
+use postgres::{Connection, Error};
+use rayon::prelude::*;
 use serde_derive::Deserialize;
-use std::io;
+use r2d2_postgres::PostgresConnectionManager;
+use csv::{ReaderBuilder, StringRecord};
 
 #[derive(Deserialize, Debug)]
 struct User {
@@ -23,7 +24,7 @@ const CMD_ADD: &str = "add";
 const CMD_LIST: &str = "list";
 const CMD_IMPORT: &str = "import";
 
-fn main() -> Result<(), Error> {
+fn main() -> Result<(), failure::Error> {
     let matches = App::new(crate_name!())
         .version(crate_version!())
         .author(crate_authors!())
@@ -60,10 +61,11 @@ fn main() -> Result<(), Error> {
 
     let addr = matches
         .value_of("database")
-        .unwrap_or("postgres://postgres@localhost:5432");
+        .unwrap_or("postgres://admin:example@localhost:5432");
 
-
-    let conn = Connection::connect(addr, TlsMode::None).unwrap();
+    let manager = PostgresConnectionManager::new(addr, r2d2_postgres::TlsMode::None)?;
+    let pool = r2d2::Pool::new(manager)?;
+    let conn = pool.get()?;
 
     match matches.subcommand() {
         (CMD_CREATE, _) => {
@@ -81,10 +83,18 @@ fn main() -> Result<(), Error> {
             }
         }
         (CMD_IMPORT, _) => {
-            let mut rdr = csv::Reader::from_reader(io::stdin());
+
+            let mut reader = ReaderBuilder::new()
+                .has_headers(true)
+                .from_path("users.csv")?;
+
+            let header = StringRecord::from(vec!["name", "email"]);
             let mut users = Vec::new();
-            for user in rdr.deserialize() {
-                users.push(user?);
+
+
+            for row in reader.records(){
+                let user : User = row?.deserialize(Some(&header))?;
+                users.push(User::new(user.name, user.email));
             }
 
             users
