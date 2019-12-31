@@ -40,9 +40,4 @@ joinable!(memberships -> users (user_id));
 joinable!(messages -> channels (channel_id));
 joinable!(messages -> users (user_id));
 
-allow_tables_to_appear_in_same_query!(
-    channels,
-    memberships,
-    messages,
-    users,
-);
+allow_tables_to_appear_in_same_query!(channels, memberships, messages, users,);

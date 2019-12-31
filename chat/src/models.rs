@@ -1,6 +1,6 @@
+use crate::schema::{channels, memberships, messages, users};
 use chrono::NaiveDateTime;
-use crate::schema::{users, channels, memberships, messages};
-use serde_derive::{Serialize, Deserialize};
+use serde_derive::{Deserialize, Serialize};
 
 pub type Id = i32;
 
@@ -13,7 +13,7 @@ pub struct User {
 
 #[derive(Debug, Identifiable, Queryable, Associations, Serialize, Deserialize)]
 #[belongs_to(User)]
-#[table_name="channels"]
+#[table_name = "channels"]
 pub struct Channel {
     pub id: Id,
     pub user_id: Id,
@@ -26,7 +26,7 @@ pub struct Channel {
 #[derive(Debug, Identifiable, Queryable, Associations, Serialize, Deserialize)]
 #[belongs_to(Channel)]
 #[belongs_to(User)]
-#[table_name="memberships"]
+#[table_name = "memberships"]
 pub struct Membership {
     pub id: Id,
     pub channel_id: Id,
@@ -36,11 +36,11 @@ pub struct Membership {
 #[derive(Debug, Identifiable, Queryable, Associations, Serialize, Deserialize)]
 #[belongs_to(Channel)]
 #[belongs_to(User)]
-#[table_name="messages"]
+#[table_name = "messages"]
 pub struct Message {
     pub id: Id,
     pub timestamp: NaiveDateTime,
-    pub channel_id : Id,
+    pub channel_id: Id,
     pub user_id: Id,
     pub text: String,
 }
