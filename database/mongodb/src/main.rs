@@ -5,10 +5,11 @@ use mongodb::{
 };
 
 use serde_derive::Deserialize;
-use clap::{SubCommand, App, AppSettings, Arg};
+use clap::{SubCommand, App, AppSettings, Arg, crate_name, crate_version, crate_authors, crate_description};
 use url::Url;
 use r2d2_mongodb::{ConnectionOptionsBuilder, MongodbConnectionManager};
 use r2d2::Pool;
+use chrono::Utc;
 
 const CMD_ADD: &str = "add";
 const CMD_LIST: &str = "list";
@@ -27,7 +28,7 @@ fn add_activity(conn: &Database, activity: Activity) -> Result<(),Error> {
         "datetime": activity.datetime
     };
 
-    let coll = conn.collection("activies");
+    let coll = conn.collection("activities");
     coll.insert_one(doc, None).map(drop)
 }
 
@@ -41,7 +42,7 @@ fn list_activities(conn: &Database)  -> Result<Vec<Activity>, Error> {
         })
 }
 
-fn main() {
+fn main() -> Result<(), failure::Error> {
 
     let matches = App::new(crate_name!())
         .version(crate_version!())
@@ -82,7 +83,30 @@ fn main() {
 
     let pool = Pool::builder()
         .max_size(4)
-        .build(manager);
+        .build(manager)?;
 
     let conn = pool.get()?;
+
+    match  matches.subcommand() {
+        (CMD_ADD, Some(matches)) => {
+            let user_id = matches.value_of("USER_ID").unwrap().to_owned();
+            let activity = matches.value_of("ACTIVITY").unwrap().to_owned();
+            let activity = Activity {
+                user_id,
+                activity,
+                datetime: Utc::now().to_string()
+            };
+
+            add_activity(&conn, activity)?
+        },
+        (CMD_LIST, _) => {
+            let list = list_activities(&conn)?;
+            for item in list {
+                println!("User: {:20} - Activity : {:20} - Datetime: {:20}", item.user_id, item.activity, item.datetime);
+            }
+        },
+        _ => { matches.usage(); }
+    }
+
+    Ok(())
 }
