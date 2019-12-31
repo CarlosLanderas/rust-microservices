@@ -5,7 +5,7 @@ pub mod models;
 use std::env;
 use failure::Error;
 use diesel::r2d2::ConnectionManager;
-use diesel::{SqliteConnection, RunQueryDsl};
+use diesel::{SqliteConnection, RunQueryDsl, QueryDsl, TextExpressionMethods};
 use self::schema::users::dsl::*;
 
 fn main() -> Result<(), Error> {
@@ -38,7 +38,16 @@ fn main() -> Result<(), Error> {
 
     //List users
     println!("Listing users...");
-    let mut items = users.load::<models::User>(&conn)?;
+    let items = users.load::<models::User>(&conn)?;
+    for user in items {
+        println!("{:?}", user);
+    }
+
+    println!("Listing with filter");
+    let items = users.filter(email.like("%@derivia.com%"))
+        .limit(10)
+        .load::<models::User>(&conn)?;
+
     for user in items {
         println!("{:?}", user);
     }
