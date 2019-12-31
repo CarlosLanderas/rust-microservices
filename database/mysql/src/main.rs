@@ -115,11 +115,11 @@ fn main() -> Result<(), failure::Error> {
 }
 
 fn create_table(conn: &mut Conn) -> Result<(), Error> {
-        conn.query("CREATE TABLE users {\
+        conn.query("CREATE TABLE users (
             id INT(6) UNSIGNED AUTO_INCREMENT PRIMARY KEY,
             name VARCHAR(50) NOT NULL,
             email VARCHAR(50) NOT NULL
-        }")
+        )")
         .map(drop)
 }
 
@@ -130,7 +130,7 @@ fn create_user(conn: &mut Conn, user: &User) -> Result<(), Error> {
 }
 
 fn list_users(conn: &mut Conn) -> Result<Vec<User>, Error> {
-  conn.query("SELECT name, email FROM USERS")?
+  conn.query("SELECT name, email FROM users")?
       .into_iter()
       .try_fold(Vec::new(), |mut vec, row| {
           let row = row?;
