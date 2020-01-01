@@ -1,9 +1,10 @@
 use actix_web::middleware::Logger;
-use actix_web::{guard, web, get, post, App, Result, HttpResponse, HttpServer, Responder, HttpRequest, Error, Either};
+use actix_web::{guard, web, error, get, post, App, Result, HttpResponse, HttpServer, Responder, HttpRequest, Error, Either, ResponseError};
 use serde::{Serialize, Deserialize};
 use actix_web::body::Body;
 use futures::future::{Future, ok, ready, Ready};
 use actix_web::web::post;
+use failure::Fail;
 
 struct Data {
     app_name: String,
@@ -48,6 +49,7 @@ async fn main() -> std::io::Result<()> {
                     .service(post_user)
                     .service(post_user_form)
                     .service(path_one)
+                    .service(custom_error)
             )
     )
     .bind("127.0.0.1:8080")?
@@ -89,5 +91,29 @@ async fn path_one(req: HttpRequest) -> impl Responder {
         HttpResponse::Ok().content_type("application/json").body(body)
     } else {
         HttpResponse::BadRequest().body("")
+    }
+}
+
+#[derive(Fail, Debug)]
+#[fail(display = "Error processing the request: {}", name)]
+struct MyError {
+    name: &'static str
+}
+
+impl error::ResponseError for MyError {}
+
+
+#[derive(Deserialize)]
+struct QueryOptions {
+    option: String,
+}
+
+#[get("/custom-error")]
+async fn custom_error(query: web::Query<QueryOptions>) -> Result<&'static str, MyError> {
+    if query.option == "1" {
+        Err(MyError{ name : "Invalid Request"})
+    }
+    else {
+        Ok("Done!")
     }
 }
