@@ -1,8 +1,8 @@
 use actix_web::middleware::Logger;
-use actix_web::{guard, web, get, App, HttpResponse, HttpServer, Responder, HttpRequest, Error};
+use actix_web::{guard, web, get, App, HttpResponse, HttpServer, Responder, HttpRequest, Error, Either};
 use serde_derive::Serialize;
 use actix_web::body::Body;
-use futures::future::{ready, Ready};
+use futures::future::{Future, ok, ready, Ready};
 
 struct Data {
     app_name: String,
@@ -44,7 +44,7 @@ async fn main() -> std::io::Result<()> {
                     .guard(guard::Header("key", "secret"))
                     .route("/hello", web::get().to(index))
                     .service(user)
-
+                    .service(path_one)
             )
     )
     .bind("127.0.0.1:8080")?
@@ -61,5 +61,18 @@ async fn user() -> impl Responder {
     User {
         name: "Carlos Landeras",
         age: 34
+    }
+}
+
+
+#[get("/path1")]
+async fn path_one(req: HttpRequest) -> impl Responder {
+
+    if req.query_string().contains("param1") {
+        let data = vec!["Some", "hidden", "data"];
+        let body = serde_json::to_string(&data).unwrap();
+        HttpResponse::Ok().content_type("application/json").body(body)
+    } else {
+        HttpResponse::BadRequest().body("")
     }
 }
