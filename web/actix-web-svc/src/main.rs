@@ -1,5 +1,5 @@
 use actix_web::middleware::Logger;
-use actix_web::{guard, web, get, post, App, HttpResponse, HttpServer, Responder, HttpRequest, Error, Either};
+use actix_web::{guard, web, get, post, App, Result, HttpResponse, HttpServer, Responder, HttpRequest, Error, Either};
 use serde::{Serialize, Deserialize};
 use actix_web::body::Body;
 use futures::future::{Future, ok, ready, Ready};
@@ -46,6 +46,7 @@ async fn main() -> std::io::Result<()> {
                     .route("/hello", web::get().to(index))
                     .service(user)
                     .service(post_user)
+                    .service(post_user_form)
                     .service(path_one)
             )
     )
@@ -70,7 +71,12 @@ async fn user() -> impl Responder {
 async fn post_user(path: web::Path<(String,String)>,json: web::Json<User>) -> impl Responder {
     HttpResponse::Ok()
         .content_type("text/plain")
-        .body(format!("Received user {} with age {} with id {} and dept {}", json.name, json.age, path.0, path.1))
+        .body(format!("Received json user {} with age {} with id {} and dept {}", json.name, json.age, path.0, path.1))
+}
+
+#[post("/user-form")]
+async fn post_user_form(form: web::Form<User>) -> Result<String> {
+    Ok(format!("User {} - Age {}", form.name, form.age))
 }
 
 
