@@ -1,6 +1,11 @@
-use actix_web::{web, get, App, HttpResponse, HttpServer, Responder};
+use actix_web::{web, guard, App, HttpResponse, HttpServer, Responder};
 use actix_web::middleware::Logger;
 
+struct Data {
+    app_name : String,
+}
+
+#[rustfmt::skip]
 #[actix_rt::main]
 async fn main() -> std::io::Result<()> {
 
@@ -9,15 +14,22 @@ async fn main() -> std::io::Result<()> {
 
     HttpServer::new(||
         App::new()
+            .data(Data {
+                app_name: "LandeApi".to_string()
+            })
             .wrap(Logger::default())
-            .service(index)
+            .service(
+                web::scope("/app")
+                    .guard(guard::Header("key", "secret"))
+                    .route("/hello", web::get().to(index))
+            )
     )
     .bind("127.0.0.1:8080")?
     .run()
     .await
 }
 
-#[get("/hello")]
-async fn index() -> impl Responder {
-    HttpResponse::Ok().body("Hello world!")
+
+async fn index(data: web::Data<Data>) -> String {
+    format!("Hello world from {}", data.app_name)
 }
