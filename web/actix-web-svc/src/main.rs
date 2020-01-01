@@ -1,16 +1,17 @@
 use actix_web::middleware::Logger;
-use actix_web::{guard, web, get, App, HttpResponse, HttpServer, Responder, HttpRequest, Error, Either};
-use serde_derive::Serialize;
+use actix_web::{guard, web, get, post, App, HttpResponse, HttpServer, Responder, HttpRequest, Error, Either};
+use serde::{Serialize, Deserialize};
 use actix_web::body::Body;
 use futures::future::{Future, ok, ready, Ready};
+use actix_web::web::post;
 
 struct Data {
     app_name: String,
 }
 
-#[derive(Serialize, Debug)]
+#[derive(Serialize, Deserialize, Debug)]
 struct User {
-    name: &'static str,
+    name: String,
     age: u8,
 }
 
@@ -44,6 +45,7 @@ async fn main() -> std::io::Result<()> {
                     .guard(guard::Header("key", "secret"))
                     .route("/hello", web::get().to(index))
                     .service(user)
+                    .service(post_user)
                     .service(path_one)
             )
     )
@@ -59,9 +61,16 @@ async fn index(data: web::Data<Data>) -> String {
 #[get("/user")]
 async fn user() -> impl Responder {
     User {
-        name: "Carlos Landeras",
+        name: "Carlos Landeras".to_string(),
         age: 34
     }
+}
+
+#[post("/user/{userid}/{dept}")]
+async fn post_user(path: web::Path<(String,String)>,json: web::Json<User>) -> impl Responder {
+    HttpResponse::Ok()
+        .content_type("text/plain")
+        .body(format!("Received user {} with age {} with id {} and dept {}", json.name, json.age, path.0, path.1))
 }
 
 
