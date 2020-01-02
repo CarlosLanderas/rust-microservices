@@ -5,6 +5,7 @@ use actix_web::body::Body;
 use futures::future::{Future, ok, ready, Ready};
 use actix_web::web::post;
 use failure::Fail;
+use actix_web::http::header;
 
 struct Data {
     app_name: String,
@@ -50,6 +51,7 @@ async fn main() -> std::io::Result<()> {
                     .service(post_user_form)
                     .service(path_one)
                     .service(custom_error)
+                    .service(generating_resource_url)
             )
     )
     .bind("127.0.0.1:8080")?
@@ -61,7 +63,7 @@ async fn index(data: web::Data<Data>) -> String {
     format!("Hello world from {}", data.app_name)
 }
 
-#[get("/user")]
+#[get("/user/")]
 async fn user() -> impl Responder {
     User {
         name: "Carlos Landeras".to_string(),
@@ -116,4 +118,15 @@ async fn custom_error(query: web::Query<QueryOptions>) -> Result<&'static str, M
     else {
         Ok("Done!")
     }
+
+}
+
+
+#[get("/resource")]
+async fn generating_resource_url(req: HttpRequest) -> Result<HttpResponse>
+{
+    let url = req.url_for("user", &["12", "it"])?;
+    Ok(HttpResponse::Found()
+        .header(header::LOCATION, url.as_str())
+        .finish())
 }
